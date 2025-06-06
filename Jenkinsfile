@@ -4,11 +4,28 @@ pipeline {
   environment {
     TERRAFORM_HOST = "20.198.249.21"
     TERRAFORM_USER = "sooya"
+    TF_REPO        = "https://github.com/kitsanaphon1/terraform-version01.git"
     TF_DIR         = "/home/sooya/terraform"
   }
 
   stages {
-    stage('🚀 Terraform Apply on Remote VM') {
+    stage('📥 Git Clone on Terraform VM') {
+      steps {
+        sshagent(credentials: ['ssh-terraform-agent']) {
+          sh """
+            ssh -o StrictHostKeyChecking=no ${TERRAFORM_USER}@${TERRAFORM_HOST} '
+              if [ ! -d ${TF_DIR} ]; then
+                git clone ${TF_REPO} ${TF_DIR};
+              else
+                cd ${TF_DIR} && git pull;
+              fi
+            '
+          """
+        }
+      }
+    }
+
+    stage('🚀 Terraform Apply') {
       steps {
         sshagent(credentials: ['ssh-terraform-agent']) {
           sh """
