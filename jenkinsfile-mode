@@ -16,7 +16,6 @@ pipeline {
 
     stage('📥 Git Clone on Terraform VM') {
       steps {
-        // ✅ ใช้ ssh-agent เข้า VM ไป clone หรือ pull git repo
         sshagent(credentials: ['ssh-terraform-agent']) {
           sh """
             ssh -o StrictHostKeyChecking=no ${TERRAFORM_USER}@${TERRAFORM_HOST} '
@@ -33,14 +32,12 @@ pipeline {
 
     stage('💻 Terraform Apply or Destroy') {
       steps {
-        // ✅ ใช้ Azure credentials จาก Jenkins Credentials
         withCredentials([
           string(credentialsId: 'ARM_CLIENT_ID', variable: 'ARM_CLIENT_ID'),
           string(credentialsId: 'ARM_CLIENT_SECRET', variable: 'ARM_CLIENT_SECRET'),
           string(credentialsId: 'ARM_SUBSCRIPTION_ID', variable: 'ARM_SUBSCRIPTION_ID'),
           string(credentialsId: 'ARM_TENANT_ID', variable: 'ARM_TENANT_ID')
         ]) {
-          // ✅ รัน terraform init และ apply หรือ destroy ขึ้นกับค่า TF_MODE
           sshagent(credentials: ['ssh-terraform-agent']) {
             sh """
               ssh -o StrictHostKeyChecking=no ${TERRAFORM_USER}@${TERRAFORM_HOST} '
@@ -59,7 +56,6 @@ pipeline {
     }
 
     stage('🌐 Get VM Public IP') {
-      // ✅ แสดงผลลัพธ์ IP เฉพาะตอนที่เป็น apply เท่านั้น
       when {
         expression { return env.TF_MODE == 'apply' }
       }
@@ -77,6 +73,7 @@ pipeline {
             ).trim()
             echo "✅ Public IP จาก Terraform: ${ip}"
             writeFile file: 'vm_ip.txt', text: ip
+            archiveArtifacts artifacts: 'vm_ip.txt', fingerprint: true
           }
         }
       }
