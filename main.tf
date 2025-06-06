@@ -2,11 +2,13 @@ provider "azurerm" {
   features {}
 }
 
+# 📦 Resource Group
 resource "azurerm_resource_group" "rg" {
   name     = var.resource_group_name
   location = var.location
 }
 
+# 🌐 Virtual Network
 resource "azurerm_virtual_network" "vnet" {
   name                = "${var.prefix}-vnet"
   address_space       = var.address_space
@@ -14,6 +16,7 @@ resource "azurerm_virtual_network" "vnet" {
   resource_group_name = azurerm_resource_group.rg.name
 }
 
+# 🔀 Subnet
 resource "azurerm_subnet" "subnet" {
   name                 = "${var.prefix}-subnet"
   resource_group_name  = azurerm_resource_group.rg.name
@@ -21,6 +24,7 @@ resource "azurerm_subnet" "subnet" {
   address_prefixes     = var.subnet_prefixes
 }
 
+# 🔐 Network Security Group (NSG) + Port Rules
 resource "azurerm_network_security_group" "nsg" {
   name                = "${var.prefix}-nsg"
   location            = var.location
@@ -37,6 +41,7 @@ resource "azurerm_network_security_group" "nsg" {
     source_address_prefix      = "*"
     destination_address_prefix = "*"
   }
+
   security_rule {
     name                       = "Allow-HTTP"
     priority                   = 1002
@@ -62,6 +67,7 @@ resource "azurerm_network_security_group" "nsg" {
   }
 }
 
+# 🌐 Public IP
 resource "azurerm_public_ip" "public_ip" {
   name                = "${var.prefix}-public-ip"
   location            = var.location
@@ -70,6 +76,7 @@ resource "azurerm_public_ip" "public_ip" {
   sku                 = "Standard"
 }
 
+# 🔗 Network Interface (NIC)
 resource "azurerm_network_interface" "nic" {
   name                = "${var.prefix}-nic"
   location            = var.location
@@ -83,6 +90,13 @@ resource "azurerm_network_interface" "nic" {
   }
 }
 
+# 🔗 เชื่อม NSG เข้ากับ NIC
+resource "azurerm_network_interface_security_group_association" "nic_nsg" {
+  network_interface_id      = azurerm_network_interface.nic.id
+  network_security_group_id = azurerm_network_security_group.nsg.id
+}
+
+# 💻 Linux Virtual Machine
 resource "azurerm_linux_virtual_machine" "vm" {
   name                = "${var.prefix}-vm"
   resource_group_name = azurerm_resource_group.rg.name
